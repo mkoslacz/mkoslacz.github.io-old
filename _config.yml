@@ -37,3 +37,4 @@ exclude:
   - Gemfile.lock
 disqus:
     shortname: mateuszkoslacz
+google_analytics: UA-91302820-1
