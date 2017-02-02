@@ -36,7 +36,7 @@ Each VIPER module consists of following sub-modules:
 5. **Entity** (-ies): objects representing your data
 6. (sometimes) **Builder**: starts a whole VIPER module
 
-I won't cover each of them in this post as it's rather a material for an another publication. For now let's focus on the general idea of the VIPER. It makes your every screen a independent module you can move around your project or even your whole projects portfolio. There's even more: it makes every sub-module independent so you can ie use VIPER from one project in another one switching a implementation of only one of sub-modules to meet the requirements of the target application. Having all of the modules and sub-modules decoupled and independent makes them extremely easy to test. Every sub-module has it's own responsibility, so it's much more easier to keep them small, neat and clean throughout whole development process. Moreover, it introduces a huge acceleration to the enterprise mobile development process as a whole team can work on the one screen at once (each dev taking one sub-module instead of every dev works on his own screen, where there’s nothing for long and then lots of screens and busy QA), and that leads to increase frequency of development team - QA iterations during the sprint what prevents a QA DDoSing on the end of the sprint. That powerfully eases agile approach - customer can review screens earlier, and soothes QA-developers edge keeping QA busy on reasonable level, not like in an „old” approach - bored QA takes care about other projects, then bunch of views is ready, you have to wait for QA to finish another projects, and then QA is very busy because of having lots of views to check at a time. Moreover it introduces a unified responsibilities split that allows developers understand the new modules at a glance. Moreover, it makes multi-platform development much easier as Android and iOS can share interfaces / protocols, Rx streams and general logic of internals, if you manage to maintain uniform architecture across platforms. Moreover, if you write your Android code in [Kotlin][kotlin], you can port the presenter, tests and some utils between platforms with very little effort, as Kotlin and Swift have very similar grammar. Android and iOS parts of the team can do different modules at once, and after finishing that they can switch and base their code on already done components of the another platform. Making your app decoupled allows you to be more agile, especially when circumstances of your project make the specification to change frequently, because you can change any of the modules or the sub-modules without even touching the rest of the codebase.
+I won't cover each of them in this post as it's rather a material for an another publication. For now let's focus on the general idea of the VIPER. It makes your every screen a independent module you can move around your project or even your whole projects portfolio. There's even more: it makes every sub-module independent so you can ie use VIPER from one project in another one switching a implementation of only one of sub-modules to meet the requirements of the target application. Having all of the modules and sub-modules decoupled and independent makes them extremely easy to test. Every sub-module has it's own responsibility, so it's much more easier to keep them small, neat and clean throughout whole development process. Moreover, it introduces a huge acceleration to the enterprise mobile development process as a whole team can work on the one screen at once and that leads to increase frequency of a dev - QA iterations during the sprint. That powerfully eases agile approach - customer can review screens earlier, and it also soothes a dev - QA edge by keeping QA busy on the reasonable level, it's not like in an „old” approach where bored QA takes care about other projects on the beginning of a sprint, and when a whole bunch of views is ready at the end of a sprint you have to wait for QA to finish another projects, and then you DDoS them using all the views you have developed. Moreover, it introduces a unified responsibilities split that allows developers understand the new modules at a glance. Furthermore, it makes multi-platform development much easier as Android and iOS can share interfaces / protocols, Rx streams and general logic of internals, if you manage to maintain uniform architecture across platforms. In addition, if you write your Android code in [Kotlin][kotlin], you can port the presenter, tests and some utils between platforms with very little effort, as Kotlin and Swift have very similar grammar. Android and iOS parts of the team can do different modules at once, and after finishing that they can switch and base their code on already done components of the another platform. What is more, making your app decoupled allows your team to be more agile, especially when circumstances of your project make the specification to change frequently, because you can change any of the modules or the sub-modules without even touching the rest of the codebase. That's a pretty bunch of advantages!
 
 # Doubt
 
@@ -46,25 +46,33 @@ Yes, yes, I can hear you yelling *"But my view X is so simple, I don't care abou
 
 Let's sum up the upsides of VIPER
 
-- clean code
-- easy TDD
-- reusable modules and sub-modules
-- easier work distribution
-- instant understanding of modules implemened by other devs
-- sharing logic across platforms
-- enchanced agility
+- clean code,
+- easy TDD,
+- reusable modules and sub-modules,
+- easier work distribution,
+- instant understanding of modules implemented by other devs,
+- sharing logic across platforms,
+- enhanced agility.
 
 And check out the downsides as well:
 
-- needs additional work to repeatedly create all of the modules **[BUSTED]**
-- some entry threshold [to beat in few days]
-- some boilerplate added [but it weighs nothing in comparision to all of the upsides]
+- needs additional work to repeatedly create all of the modules **[BUSTED]**,
+- some entry threshold [to beat in few days],
+- some boilerplate added [but it weighs nothing in comparison to all of the upsides].
 
-For me it looks like upsides of this architecture weigh much more than downsides, so it's definitely worth trying to adopt it to your workshop.
+For me it looks like upsides of this architecture weigh much more than downsides, so I think that it's definitely worth trying to adopt it to your workshop.
 
 # But wait...
 
-All of the iOS developers are happy now and they've just started reading various articles about iOS VIPER implementation, as there are plenty of them. On the other hand, Android developers got somehow confused, as searching for the "Android VIPER architecture" gives some appropriate results, but there isn't even full page of Google results, and these results are rather description of general idea, with not much of implementation and examples. There are
+All of the iOS developers are happy now and they've just started reading various articles about iOS VIPER implementation, as there are plenty of them. You, iOS fellas, can stop reading right now as you have lots articles to read about that.  On the other hand, Android developers got somehow confused, as searching for the ["Android VIPER architecture"][googleViper] gives some appropriate results, but there isn't even a full page of Google results. Let's review what do we have here:
+
+* Lyubomir Ganev [series of posts](http://luboganev.github.io/blog/clean-architecture-pt1/) and a [related sample](https://github.com/luboganev/Carbrands)
+* Richa Khandelwal [post on a Realm blog](https://realm.io/news/360andev-richa-khandelwal-effective-android-architecture-patterns-java/) and a [related sample](https://github.com/richk/CourseraDemoApp)
+*  Jiri Helmich [presentation](https://speakerdeck.com/helmisek/android-viper-architecture-implementation) and a [related sample](https://github.com/Helmisek/android-viper)
+* Dmytro Zaitsev [presentation](https://speakerdeck.com/dmitriyzaitsev/viper-sexy-architecting-or-mvp-on-steroids) and a [library he created](https://github.com/RxViper/RxViper)
+* and others that I probably couldn't find.
+
+So there are already some sources to learn from, and it's great if you liked and wanted to adopt one of these! Looking in the samples you can see that everyone has it's own interpretation of VIPER. In first two samples I somehow feel the lack of an architecture-enforced Router / Routing (correct me if I'm wrong of course). The following two ones, unfortunately, have only presentations with not much text that describes their usage what makes it not so easy to start using them. I discovered them after I have been developing my VIPER library, [Moviper][moviper], and I perceive the roles of the VIPER components in a slightly different perspective. You can check out [Moviper][moviper] to check out the differences for now, in later posts I will describe my feeling of this architecture in details. As you can see, there isn't much about VIPER in the Android society, and this concept still isn't monolithic throughout developers so I feel like there is still a lil bit of room for me. That's why I decided to publish some articles about general VIPER and [Moviper][moviper] usage and features. Stay tuned!
 
 
 [moviper-generator]: https://github.com/mkoslacz/MoviperTemplateGenerator
@@ -74,3 +82,4 @@ All of the iOS developers are happy now and they've just started reading various
 [tdd]: http://agiledata.org/essays/tdd.html
 [seams]: https://www.philosophicalhacker.com/post/what-makes-android-apps-testable/
 [kotlin]: https://kotlinlang.org/
+[googleViper]: https://www.google.pl/#safe=off&q=android+viper+architecture
