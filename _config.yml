@@ -35,3 +35,5 @@ gems:
 exclude:
   - Gemfile
   - Gemfile.lock
+disqus:
+    shortname: mateuszkoslacz
