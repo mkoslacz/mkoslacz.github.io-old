@@ -67,7 +67,7 @@ For me it looks like upsides of this architecture weigh much more than downsides
 
 # But wait...
 
-All of the iOS developers are happy now and they've just started reading various articles about iOS VIPER implementation, as there are plenty of them. You, iOS fellas, can stop reading right now as you have lots articles to read about that.  On the other hand, Android developers got somehow confused, as searching for the ["Android VIPER architecture"][googleViper] gives some appropriate results, but there isn't even a full page of Google results. Let's review what do we have here:
+All of the iOS developers are happy now and they've just started reading various articles about iOS VIPER implementation, as there are [plenty of them][googleiOSViper]. You, iOS fellas, can stop reading right now as you have lots articles to read about that.  On the other hand, Android developers got somehow confused, as searching for the ["Android VIPER architecture"][googleAndroidViper] gives some appropriate results, but there isn't even a full page of Google results. Let's review what do we have here:
 
 * Lyubomir Ganev [series of posts](http://luboganev.github.io/blog/clean-architecture-pt1/) and a [related sample](https://github.com/luboganev/Carbrands)
 * Richa Khandelwal [post on a Realm blog](https://realm.io/news/360andev-richa-khandelwal-effective-android-architecture-patterns-java/) and a [related sample](https://github.com/richk/CourseraDemoApp)
@@ -85,4 +85,5 @@ So there are already some sources to learn from, and it's great if you liked and
 [tdd]: http://agiledata.org/essays/tdd.html
 [seams]: https://www.philosophicalhacker.com/post/what-makes-android-apps-testable/
 [kotlin]: https://kotlinlang.org/
-[googleViper]: https://www.google.pl/#safe=off&q=android+viper+architecture
+[googleAndroidViper]: https://www.google.pl/#safe=off&q=android+viper+architecture
+[googleiOSViper]: https://www.google.pl/#safe=off&q=ios+viper+architecture
