@@ -67,4 +67,96 @@ But in our team we have worked out the following, slightly shifted responsibilit
 - Entity: data objects that are used in the app buisness logic, independent from data handling and view implementation
 - Routing: contains all system-related logic. You can alternatively call it "System". It manages navigation, screen transitions, scheduling notifications, etc.
 
-Mentioned division allows us to create modular, testable, clean and neat code. So, if we have
+Mentioned division allows us to create modular, testable, clean and neat code. So, now we know where to put our stuff, so let's begin to code!
+
+The starting point of every screen is a contract. As I already mentioned, it defines whole and flow between modules of a screen. Let's define methods needed to implement the whole login screen:
+
+```Java
+interface LoginContract {
+
+    interface View : MvpView {
+        val loginClicks: Observable<LoginBundle>
+        val helpClicks: Observable<Any>
+        fun showLoading()
+        fun hideLoading()
+        fun showError(error: Throwable)
+    }
+
+    interface Interactor : ViperRxInteractor {
+        fun performLogin(loginBundle: LoginBundle): Single<Any>
+    }
+
+    interface Routing : ViperRxRouting<Activity> {
+        fun goToHelpScreen()
+        fun goToLoginScreen()
+    }
+}
+
+```
+
+and `LoginBundle` used as a Observable event type:
+
+```Java
+data class LoginBundle(val login: String,
+                       val password: String)
+```
+
+
+As you can see, Presenter has no interface here. Now we get to the Passive word from the used Moviper screen flavor. Passive Viper means that View has no idea about Presenter attached to it. Actually you can access presenter from view using `presenter` property / `getPresenter()` method, but in this flavor it will be just plain ViperPresenter, so you won't have an access to your actual presenter methods. View communicates with presenter through event streams exposed through view interface to which preseter subscribes when attaching to the view. Interactor and Routing are, let's say, Preseters "tools", presenter delegates work to them and receives results using Observables. That said, there is no component that calls Presenters methods, so there is no need to make it implement any interface.
+
+Ok, so let's begin implementing the Presenter. Let's check out what do we have there already.
+
+```Java
+class LoginPresenter :
+        BaseRxPresenter<LoginContract.View,
+                LoginContract.Interactor,
+                LoginContract.Routing>(),
+        ViperPresenter<LoginContract.View> {
+
+    override fun createRouting(): LoginContract.Routing = LoginRouting()
+
+    override fun createInteractor(): LoginContract.Interactor = LoginInteractor()
+}
+```
+
+As you can see, the class declaration is pretty complicated because of some crazy generic stuff. Don't worry, after implementing some Viper modules you will get what happens here, but for now just trust the force and begin with defining what shall happen on the very beginning of the presenter lifecycle in Viper module. To achieve that override the `attachView(view: LoginContract.View?)` method. Don't forget to call super!
+
+```Java
+class LoginPresenter :
+        BaseRxPresenter<LoginContract.View,
+                LoginContract.Interactor,
+                LoginContract.Routing>(),
+        ViperPresenter<LoginContract.View> {
+
+    override fun attachView(view: LoginContract.View?) {
+        super.attachView(view)
+
+        addSubscription(
+                view
+                        ?.loginClicks
+                        ?.doOnNext { view?.showLoading() }
+                        ?.subscribeOn(Schedulers.io())
+                        ?.flatMapSingle { interactor.performLogin(it) }
+                        ?.observeOn(AndroidSchedulers.mainThread())
+                        ?.doOnError {
+                            view?.hideLoading()
+                            view?.showError(it)
+                        }
+                        ?.retry()
+                        ?.subscribe { routing.goToLoginScreen() })
+
+        addSubscription(
+                view
+                        ?.helpClicks
+                        ?.doOnError { view?.showError(it) }
+                        ?.retry()
+                        ?.subscribe { routing.goToHelpScreen() })
+    }
+
+    override fun createRouting(): LoginContract.Routing = LoginRouting()
+
+    override fun createInteractor(): LoginContract.Interactor = LoginInteractor()
+}
+```
+
+As you probably noticed, presenter has an access to view, routing and interactor in whole class scope. Moreover, it automagically cast it to appropriate interface defined in contract. Note that I always use the view optional call - it's just easier to do it in a no-brainer way, as we often use thread switching in our streams, so view could get detached from the presenter in the meanwhile. Don't let Android Studio fool you using "unnecessary safe call" message! On the other hand Interactor and Routing are tightly coupled with presenter so there is no need to use safe calls on them in any situation. The other fancy thing there is that we haven't even touched the another components but we can safely implement whole presenter! Using Moviper you can pararelize work on the single module on whole team. Making work more focused on single screen makes you send new builds to QA faster, so there is no bottlenecking on the very end of the sprint! Now let's go back to the implementation.
