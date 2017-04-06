@@ -279,11 +279,11 @@ OK, so our presenter is ready, now let's implement the routing. Let's start with
 class LoginRouting : BaseRxRouting<Activity>(), LoginContract.Routing {
 
     override fun goToHelpScreen() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented")
     }
 
     override fun goToProfileScreen() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") 
     }
 }
 ```
@@ -297,3 +297,36 @@ So let's create starters for mentioned screens and place them in correct package
 
 ![I put the starters for the separate packages in the same way I did with a whole Login Viper module.]({{ site.url }}/assets/StartersLocation.png){:.center-image}
 *I put the starters for the separate packages in the same way I did with a whole Login Viper module.*{: style="text-align: center; display: block;"}
+
+Ok, so now let's use our starters in routing:
+
+```Java
+class LoginRouting : BaseRxRouting<Activity>(), LoginContract.Routing {
+
+    private val helpStarter = HelpStarter()
+    private val profileStarter = ProfileStarter()
+
+    override fun goToHelpScreen() {
+        relatedContext?.let { helpStarter.start(it) }
+    }
+
+    override fun goToProfileScreen() {
+        relatedContext?.let { profileStarter.start(it) }
+    }
+}
+
+```
+
+And a quick look how the starters look like:
+
+```Java
+class HelpStarter {
+
+    // it won't work for now as we don't have HelpActivity yet, so for now let's leave this method empty.
+    fun start(context: Context) = context.startActivity(Intent(context, HelpActivity::class.java))
+}
+```
+
+As you can see, I have made them fields of our Routing. You will get the great benefit of it in the next post, while we'll redo the whole process using TDD. For now just trust me please ;). Please take note of a `relatedContext` nullcheck using cool Kotlin [safe call](https://kotlinlang.org/docs/reference/null-safety.html#safe-calls) and [let function](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/let.html). In Routing it's important to always check if the mentioned context is attached, because if Presenter calls a routing on the non-main thread, it's possible that related context provider, ie. Activity already got destroyed, so it could lead to crash. Ok, so now we have implemented the routing despite that we don't have any other Viper module implemented, nice!
+
+Ok, so let's implement the Interactor now:
