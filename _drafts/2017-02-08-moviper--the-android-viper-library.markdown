@@ -83,7 +83,7 @@ interface LoginContract {
     }
 
     interface Interactor : ViperRxInteractor {
-        fun performLogin(loginBundle: LoginBundle): Single<Any>
+        fun performLogin(loginBundle: LoginBundle): Single<UserModel>
     }
 
     interface Routing : ViperRxRouting<Activity> {
@@ -94,13 +94,21 @@ interface LoginContract {
 
 ```
 
-and `LoginBundle` data class used as a Observable event type, let's put it to the `data` package:
+and `LoginBundle` data class used as a Observable event type that will, well, bundle the user login data. Let's put it to the `data` package:
 
 ```Java
 data class LoginBundle(val login: String,
                        val password: String)
 ```
 
+There is also a UserModel class that will represent our user retreived from the remote:
+
+```Java
+data class UserModel(val login: String,
+                     val id: Int)
+```
+
+// TODO change it!
 ![Let's put our nice data class to the separate package.]({{ site.url }}/assets/LoginBundleLocation.png){:.center-image}
 *Let's put our nice data class to the separate package.*{: style="text-align: center; display: block;"}
 
@@ -283,7 +291,7 @@ class LoginRouting : BaseRxRouting<Activity>(), LoginContract.Routing {
     }
 
     override fun goToProfileScreen() {
-        TODO("not implemented") 
+        TODO("not implemented")
     }
 }
 ```
@@ -329,4 +337,161 @@ class HelpStarter {
 
 As you can see, I have made them fields of our Routing. You will get the great benefit of it in the next post, while we'll redo the whole process using TDD. For now just trust me please ;). Please take note of a `relatedContext` nullcheck using cool Kotlin [safe call](https://kotlinlang.org/docs/reference/null-safety.html#safe-calls) and [let function](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/let.html). In Routing it's important to always check if the mentioned context is attached, because if Presenter calls a routing on the non-main thread, it's possible that related context provider, ie. Activity already got destroyed, so it could lead to crash. Ok, so now we have implemented the routing despite that we don't have any other Viper module implemented, nice!
 
-Ok, so let's implement the Interactor now:
+Ok, so let's implement the Interactor now, I did it that way:
+
+```Java
+class LoginInteractor : BaseRxInteractor(), LoginContract.Interactor {
+
+    val retrofit = Retrofit.Builder().baseUrl("https://api.github.com/").build()
+
+    override fun performLogin(loginBundle: LoginBundle): Single<UserModel> {
+        return retrofit
+                .create(LoginAndGetUser::class.java)
+                .getUser(loginBundle.authorization)
+    }
+
+    private interface LoginAndGetUser {
+        @GET("/user")
+        fun getUser(@Header("Authorization") authorization: String): Single<UserModel>
+    }
+}
+```
+
+Where I have extended LoginBundleClass like this:
+
+```Java
+data class LoginBundle(val login: String,
+                       val password: String){
+
+    val authorization = "Basic " + Base64.encodeToString(("$login:$password").toByteArray(), Base64.NO_WRAP)
+}
+```
+
+*Pro reader note: yep, I know how it looks like, but dude, it's for presentation purposes.*
+
+Well, I don't want to focus on networking implementation here, it's over-simplified moreover. Just trust me, this code takes the login and password and translates it in the way readable for server authorization. In the regular case we would need to keep the header for whole session using Interceptors, and I personally would abstract-out the network layer implementation from the Interactor using Repository Design Pattern, but it's the material for another article anyway.
+
+Now let's focus on the view implementation:
+
+```Java
+class LoginActivity : ViperAiPassiveActivity<LoginContract.View>(), LoginContract.View {
+
+    override val loginClicks by lazy {
+        RxView.clicks(loginBtn)
+                .map {
+                    LoginBundle(login = loginField.text.toString(),
+                            password = passwordField.text.toString())
+                }!!
+    }
+
+    override val helpClicks by lazy { RxView.clicks(helpBtn) }
+
+    override fun showLoading() {
+        progressBar.visible()
+        loginBtn.gone()
+    }
+
+    override fun showError(error: Throwable) {
+        progressBar.gone()
+        loginBtn.visible()
+        Toast.makeText(this, error.localizedMessage, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun createPresenter() = LoginPresenter()
+
+    override fun getLayoutId() = R.layout.activity_login
+}
+```
+
+In this file I have used some cool Kotlin features to reduce boilerplate and make the code more readable. Firstly, there are [Kotlin Android Extensions](https://kotlinlang.org/docs/tutorials/android-plugin.html) that allows us reefer views using their ids directly in code without declaring them using `findViewById()` method. You can see that I reference progressBar, loginBtn etc directly, without any initialization. The second thing is the use of [Extension Functions](https://kotlinlang.org/docs/reference/extensions.html#extension-functions) that I use to change the visibility of the views neatly, ie `progresBar.visible()`. I put view extensions to the separate file:
+
+```Java
+fun View.visible() = this.visibility == View.VISIBLE
+
+fun View.gone() = this.visibility == View.GONE
+```
+
+The third thing is a usage of [Kotlin lazy function](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/lazy.html) that allows us to initialize values that uses Android Views inside the class body, before views initialization, instead of `onCreate` method. Kotlin is sweet!
+
+I've also used [Jake Wharton's RxBinding](https://github.com/JakeWharton/RxBinding) to easily create Rx streams from buttons.
+
+And don't forget about the corresponding layout file:
+
+```xml
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                             xmlns:app="http://schemas.android.com/apk/res-auto"
+                                             android:layout_width="match_parent"
+                                             android:layout_height="match_parent">
+
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:ems="10"
+            android:id="@+id/loginField"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="8dp"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginLeft="8dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:hint="login"
+            app:layout_constraintHorizontal_bias="0.503"/>
+
+    <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"
+            android:ems="10"
+            android:id="@+id/passwordField"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/loginField"
+            android:layout_marginRight="8dp"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginLeft="8dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:hint="password"/>
+
+    <Button
+            android:text="Login"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/loginBtn"
+            android:layout_marginRight="8dp"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginLeft="8dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/passwordField"/>
+
+    <ProgressBar
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressBar"
+            android:layout_marginRight="8dp"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginLeft="8dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/loginBtn"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"/>
+
+    <Button
+            android:text="help"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/helpBtn"
+            android:layout_marginRight="8dp"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginLeft="8dp"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginBottom="8dp"/>
+</android.support.constraint.ConstraintLayout>
+```
+
+![This is how our view looks like.]({{ site.url }}/assets/MainActivityLayout.png){:.center-image}
+*This is how our view looks like.*{: style="text-align: center; display: block;"}
+
+As you can see, our view implementation is pretty straightforward. We show and hide appropriate views, show an error in the toast, and provide click streams - in case of login clicks, we map it to the `LoginBundle` using text from inputs. There is also a defined presenter and layout, and that was done for us by MoviperTemplatesGenerator. In the view you just define the behaviour, layout, and a presenter, and you don't have to worry about any kind of binding to presenter, handling lifecycle etc. Moviper does it for you.
