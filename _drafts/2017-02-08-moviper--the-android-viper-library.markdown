@@ -403,12 +403,17 @@ class LoginActivity : ViperAiPassiveActivity<LoginContract.View>(), LoginContrac
 }
 ```
 
-In this file I have used some cool Kotlin features to reduce boilerplate and make the code more readable. Firstly, there are [Kotlin Android Extensions](https://kotlinlang.org/docs/tutorials/android-plugin.html) that allows us reefer views using their ids directly in code without declaring them using `findViewById()` method. You can see that I reference progressBar, loginBtn etc directly, without any initialization. The second thing is the use of [Extension Functions](https://kotlinlang.org/docs/reference/extensions.html#extension-functions) that I use to change the visibility of the views neatly, ie `progresBar.visible()`. I put view extensions to the separate file:
+In this file I have used some cool Kotlin features to reduce boilerplate and make the code more readable. Firstly, there are [Kotlin Android Extensions](https://kotlinlang.org/docs/tutorials/android-plugin.html) that allows us reefer views using their ids directly in code without declaring them using `findViewById()` method. You can see that I reference progressBar, loginBtn etc directly, without any initialization. The second thing is the use of [Extension Functions](https://kotlinlang.org/docs/reference/extensions.html#extension-functions) that I use to change the visibility of the views neatly, ie `progresBar.visible()`. I put view extensions to the separate file in the `utils` package:
 
+`com.mateuszkoslacz.movipershowcase.util.ViewExtensions.kt`
 ```Java
-fun View.visible() = this.visibility == View.VISIBLE
+fun View.visible() {
+    this.visibility = View.VISIBLE
+}
 
-fun View.gone() = this.visibility == View.GONE
+fun View.gone() {
+    this.visibility = View.GONE
+}
 ```
 
 The third thing is a usage of [Kotlin lazy function](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/lazy.html) that allows us to initialize values that uses Android Views inside the class body, before views initialization, instead of `onCreate` method. Kotlin is sweet!
@@ -495,3 +500,59 @@ And don't forget about the corresponding layout file:
 *This is how our view looks like.*{: style="text-align: center; display: block;"}
 
 As you can see, our view implementation is pretty straightforward. We show and hide appropriate views, show an error in the toast, and provide click streams - in case of login clicks, we map it to the `LoginBundle` using text from inputs. There is also a defined presenter and layout, and that was done for us by MoviperTemplatesGenerator. In the view you just define the behaviour, layout, and a presenter, and you don't have to worry about any kind of binding to presenter, handling lifecycle etc. Moviper does it for you.
+
+It's worth noting that view is 100% passive here - it means that view is not aware of kind of presenter attached to it nor methods it has. It doesn't call presenter in any way - it just provides the interface to which some presenter can attach itself to. It's presenter that decides what to do, what to use and what not to use - view has no app logic inside. First of all, it's a clean design that makes our apps maintainable, but it also comes in handy in our production environment where we attach multiple presenters to our views using Moviper [ViperPresentersList](https://github.com/mkoslacz/Moviper#attaching-multiple-presenters-to-the-view) presenter class; app logic presenter, analytics presenter, advertising presenter, and the count of the presenters is transparent for the view. It allows us dynamically attach or detach presenters to ie turn off ads for premium users. Moreover, if your presenter has grown too much and for some reason you can't split your view to smaller chunks that corresponds with separate usecases you can create the presenter for each usecase and attach the whole bunch of them to the single view. It allows us to keep our classes small, and smaller (in most cases) means more readable, more maintainable, more testable and more awesome. And still - with no changes to View!
+
+Ok, now our login screen is fully functional. But before launching it let's pretend that our sprint have just finished and we have to implement the next screens. Let's check out how it will influence our previous module (hint: it won't).
+
+Let's create our HelpActivity that we're prepared to launch as we have created a starter for it before. It's not created as a Moviper Activity for simplicity, but it should be ;):
+
+```Java
+class HelpActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_help)
+    }
+}
+```
+
+and now we can uncomment the code we wrote before in our starter:
+
+```Java
+class HelpStarter {
+
+    fun start(context: Context) = context.startActivity(Intent(context, HelpActivity::class.java))
+}
+```
+
+What are the changes in the Login Viper code? None. The only difference is that our help button started to work. In Login Viper, what will be a overhead of an existence of a help screen if we decide to disable the help button using some remote config? Almost none (a one-liner HelpStarter class object created in Routing). Moreover, we could remotely swap the starter to another one existing in our code to remotely modify the behavior of the app. Viper allows a very high modularity of apps in the level that allows to reconfigure the app on the fly. It's very helpful in handling special events (ie. special Christmas modules that can be activated and deactivated without an update) or some fatal scenarios in which some module malfunctions we can always disable it remotely to avoid further crashes during the hotfixing. More detailed article about this feature coming soon.
+
+Now let's focus on the ProfileActivity, and once again,  we're prepared to launch it as we have created a starter for it before. It's not created as a Moviper Activity for simplicity, but it should be ;):
+
+```Java
+const val EXTRA_USERNAME_STRING = "EXTRA_USERNAME_STRING"
+
+class ProfileStarter {
+
+    fun start(context: Context, user: UserModel) {
+        val starter = Intent(context, ProfileActivity::class.java)
+        starter.putExtra(EXTRA_USERNAME_STRING, user.login)
+        context.startActivity(starter)
+    }
+
+}
+```
+
+```Java
+class ProfileActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_profile)
+        usernameText.text = intent.getStringExtra(EXTRA_USERNAME_STRING)
+    }
+}
+```
+
+And once again, no changes in Login Viper code, and the only difference is that we're processed to the ProfileScreen after the successfull login.
