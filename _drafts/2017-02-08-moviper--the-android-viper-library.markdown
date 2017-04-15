@@ -78,7 +78,6 @@ interface LoginContract {
         val loginClicks: Observable<LoginBundle>
         val helpClicks: Observable<Any>
         fun showLoading()
-        fun hideLoading()
         fun showError(error: Throwable)
     }
 
@@ -89,6 +88,7 @@ interface LoginContract {
     interface Routing : ViperRxRouting<Activity> {
         fun goToHelpScreen()
         fun goToProfileScreen()
+        fun finish()
     }
 }
 
@@ -501,7 +501,7 @@ And don't forget about the corresponding layout file:
 
 As you can see, our view implementation is pretty straightforward. We show and hide appropriate views, show an error in the toast, and provide click streams - in case of login clicks, we map it to the `LoginBundle` using text from inputs. There is also a defined presenter and layout, and that was done for us by MoviperTemplatesGenerator. In the view you just define the behaviour, layout, and a presenter, and you don't have to worry about any kind of binding to presenter, handling lifecycle etc. Moviper does it for you.
 
-It's worth noting that view is 100% passive here - it means that view is not aware of kind of presenter attached to it nor methods it has. It doesn't call presenter in any way - it just provides the interface to which some presenter can attach itself to. It's presenter that decides what to do, what to use and what not to use - view has no app logic inside. First of all, it's a clean design that makes our apps maintainable, but it also comes in handy in our production environment where we attach multiple presenters to our views using Moviper [ViperPresentersList](https://github.com/mkoslacz/Moviper#attaching-multiple-presenters-to-the-view) presenter class; app logic presenter, analytics presenter, advertising presenter, and the count of the presenters is transparent for the view. It allows us dynamically attach or detach presenters to ie turn off ads for premium users. Moreover, if your presenter has grown too much and for some reason you can't split your view to smaller chunks that corresponds with separate usecases you can create the presenter for each usecase and attach the whole bunch of them to the single view. It allows us to keep our classes small, and smaller (in most cases) means more readable, more maintainable, more testable and more awesome. And still - with no changes to View!
+It's worth noting that view is 100% passive here - it means that view is not aware of kind of presenter attached to it nor methods it has. It doesn't call presenter in any way - it just provides the interface to which some presenter can attach itself to. It's presenter that decides what to do, what to use and what not to use - view has no app logic inside. First of all, it's a clean design that makes our apps maintainable, but it also comes in handy in our production environment where we attach multiple presenters to our views using Moviper [ViperPresentersList](https://github.com/mkoslacz/Moviper#attaching-multiple-presenters-to-the-view) presenter class; app logic presenter, analytics presenter, advertising presenter, and the count of the presenters is transparent for the view. It allows us dynamically attach or detach presenters to ie turn off ads for premium users. Moreover, if your presenter has grown too much and for some reason you can't split your view to smaller chunks that corresponds with separate usecases you can create the presenter for each usecase and attach the whole bunch of them to the single view. It allows us to keep our classes small, and smaller (in most cases) means more readable, more maintainable, more testable and more awesome. And still - with no changes to View! It also works for defining multiple behaviors for one view. We use it ie to create a one login screen and reuse it in the various login methods as we allow authorization using some external account credentials in our apps. Moviper provides a ready-to-use tool for it called [PresentersDispatcher](https://github.com/mkoslacz/Moviper#choosing-presenter-on-runtime). The idea works in both ways - we also swap the views using the same presenter and whole app logic, ie when we implement the Android TV version of our apps using the goodies from Leanback Library.
 
 Ok, now our login screen is fully functional. But before launching it let's pretend that our sprint have just finished and we have to implement the next screens. Let's check out how it will influence our previous module (hint: it won't).
 
@@ -550,9 +550,19 @@ class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
-        usernameText.text = intent.getStringExtra(EXTRA_USERNAME_STRING)
+        usernameText.text = intent.getStringExtra(EXTRA_USERNAME_STRING) // display the username
     }
 }
 ```
 
 And once again, no changes in Login Viper code, and the only difference is that we're processed to the ProfileScreen after the successfull login.
+
+And well, it looks like we're finished our base example of Moviper PassiveView flavor in Kotlin. Of course, if you prefer Java you can use it as well, even better with some flavor that will replace Kotlin Android Extensions for you, ie Butterknife or Databinding flavor. Moreover, if you don't like the passive view concept you can choose the flavor in which view is not passive and it calls presenters metods, or you can even pick the non-rx Moviper version. Feel free to choose your favorite! (but take note that I consider the flavor described in this post as a most boilerplate-reducing, readable, scalable and featureful) Just check out the repo.
+
+To sum up let's take a look at our code. It's highly modular in way that allows us remotely enable, disable and swap modules and develop multiple screens at once without conflicts. The contract allows a dev to take a quick overview how the whole module works while each submodule is so simple and beautiful that it's understandable at a glance. The view is passive, so we can swap the presenters, split the presenter to multiple ones if it grows too much, or attach additional presenters for optional features. We wrapped all of our logic in Rx streams that allows us to track the app execution path easily and thanks to it it's almost completely crash-safe (not to be confused with being error-safe). And there is a MoviperTemplatesGenerator that did all of the relations binding, class creating and inheritance defining for us! That's pretty nice bunch of features!
+
+In this post series I have skipped some less important code, but you can check out and run the whole here: !!!!
+
+I encourage you to let me what you think about the architecture and the library itself. Feel free to contribute and report the issues.
+
+And last but not least, stay tuned as I'll be posting more about the Moviper goodies as Inter-Presenter-Communication, dispatching presenters on runtime, using multiple presenters with one view, creating the viper modules for RecyclerView cells, creating Android Service based viper modules and standalone viper modules, passing Intent extras to presenters, TDDing Viper modules, using Moviper Test utils, using iOS Moviper Version, sharing code between Android and iOS thanks to Moviper and much more!
