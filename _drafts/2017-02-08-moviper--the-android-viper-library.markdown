@@ -6,6 +6,7 @@ date: "2017-02-08 08:38:09 +0100"
 
 #tl;dr
 
+# Introduction
 
 On the previous post I have covered pros and cons and a general idea of the viper architecture. For now let's focus on Moviper - the Android Viper library. Moviper comes in many different flavors, you can choose more or less advanced one or just pick one that fits you most. In this post I'll show you the flavor I use in the daily basis on the example of a simple Github login screen. I use Rx Presenters, Passive Autoinject Views and I wrap it up using Kotlin language with Android Kotlin Extensions. Sounds scary? Actually it's pretty straighforward. Fear not and read on!
 
@@ -19,6 +20,8 @@ It will consist of login screen that:
 
 Ok, enough talking, let's get our feet wet!
 
+# Setup & Contract
+
 First of all, install the [Moviper Templates Generator](https://github.com/mkoslacz/MoviperTemplateGenerator) using instructions provided in the repos readme. Just click the link I've inlined. Remember to restart the Android Studio after the installation!
 
 After that, start up with a brand new Android project with no Activity. If you're new to Android you can follow a official Google tutorial [here](https://developer.android.com/studio/projects/create-project.html) to learn more about stuff we will discuss here.
@@ -27,7 +30,7 @@ The next step is pretty obvious, go to [Moviper Github page](https://github.com/
 
 ```(groovy)
 dependencies {
-  compile 'com.mateuszkoslacz.moviper:moviper-rx:2.0.1'
+  compile 'com.mateuszkoslacz.moviper:moviper-rx:2.0.3'
 }
 ```
 
@@ -112,7 +115,9 @@ data class UserModel(val login: String,
 ![Let's put our nice data class to the separate package.]({{ site.url }}/assets/LoginBundleLocation.png){:.center-image}
 *Let's put our nice data class to the separate package.*{: style="text-align: center; display: block;"}
 
-As you can see, Presenter has no interface here. Now we get to the Passive word from the used Moviper screen flavor. Passive Viper means that View has no idea about Presenter attached to it. Actually you can access presenter from view using `presenter` property / `getPresenter()` method, but in this flavor it will be just plain ViperPresenter, so you won't have an access to your actual presenter methods. View communicates with presenter through event streams exposed through view interface to which preseter subscribes when attaching to the view. Interactor and Routing are, let's say, Preseters "tools", presenter delegates work to them and receives results using Observables. That said, there is no component that calls Presenters methods, so there is no need to make it implement any interface.
+As you can see, Presenter has no interface here. Now we get to the Passive word from the used Moviper screen flavor. Passive Viper means that View has no idea about Presenter attached to it. Actually you can access presenter from view using `presenter` property / `getPresenter()` method, but in this flavor it will be just plain ViperPresenter, so you won't have an access to your actual presenter methods. View communicates with presenter through event streams exposed through view interface to which presenter subscribes when attaching to the view. Interactor and Routing are, let's say, Preseters "tools", presenter delegates work to them and receives results using Observables. That said, there is no component that calls Presenters methods, so there is no need to make it implement any interface.
+
+# Presenter
 
 Ok, so let's begin implementing the Presenter. Let's check out what do we have there already.
 
@@ -281,6 +286,8 @@ So let's see what happens here:
 
 The second stream based on `view?.helpClicks` has the similar philosophy, so I won't cover it step by step as it's pretty straightforward in the context of the previous stream.
 
+# Routing
+
 OK, so our presenter is ready, now let's implement the routing. Let's start with using Android Studio auto-fix to implement stubbed methods from the contract:
 
 ```Java
@@ -337,6 +344,8 @@ class HelpStarter {
 
 As you can see, I have made them fields of our Routing. You will get the great benefit of it in the next post, while we'll redo the whole process using TDD. For now just trust me please ;). Please take note of a `relatedContext` nullcheck using cool Kotlin [safe call](https://kotlinlang.org/docs/reference/null-safety.html#safe-calls) and [let function](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/let.html). In Routing it's important to always check if the mentioned context is attached, because if Presenter calls a routing on the non-main thread, it's possible that related context provider, ie. Activity already got destroyed, so it could lead to crash. Ok, so now we have implemented the routing despite that we don't have any other Viper module implemented, nice!
 
+# Interactor
+
 Ok, so let's implement the Interactor now, I did it that way:
 
 ```Java
@@ -370,6 +379,8 @@ data class LoginBundle(val login: String,
 *Pro reader note: yep, I know how it looks like, but dude, it's for presentation purposes.*
 
 Well, I don't want to focus on networking implementation here, it's over-simplified moreover. Just trust me, this code takes the login and password and translates it in the way readable for server authorization. In the regular case we would need to keep the header for whole session using Interceptors, and I personally would abstract-out the network layer implementation from the Interactor using Repository Design Pattern, but it's the material for another article anyway.
+
+# View
 
 Now let's focus on the view implementation:
 
@@ -420,81 +431,7 @@ The third thing is a usage of [Kotlin lazy function](https://kotlinlang.org/api/
 
 I've also used [Jake Wharton's RxBinding](https://github.com/JakeWharton/RxBinding) to easily create Rx streams from buttons.
 
-And don't forget about the corresponding layout file:
-
-```xml
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                             xmlns:app="http://schemas.android.com/apk/res-auto"
-                                             android:layout_width="match_parent"
-                                             android:layout_height="match_parent">
-
-    <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:inputType="textPersonName"
-            android:ems="10"
-            android:id="@+id/loginField"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="8dp"
-            android:layout_marginRight="8dp"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginLeft="8dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:hint="login"
-            app:layout_constraintHorizontal_bias="0.503"/>
-
-    <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:inputType="textPassword"
-            android:ems="10"
-            android:id="@+id/passwordField"
-            android:layout_marginTop="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/loginField"
-            android:layout_marginRight="8dp"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginLeft="8dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:hint="password"/>
-
-    <Button
-            android:text="Login"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/loginBtn"
-            android:layout_marginRight="8dp"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginLeft="8dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            android:layout_marginTop="8dp"
-            app:layout_constraintTop_toBottomOf="@+id/passwordField"/>
-
-    <ProgressBar
-            style="?android:attr/progressBarStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/progressBar"
-            android:layout_marginRight="8dp"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginLeft="8dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/loginBtn"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"/>
-
-    <Button
-            android:text="help"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/helpBtn"
-            android:layout_marginRight="8dp"
-            app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginLeft="8dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginBottom="8dp"/>
-</android.support.constraint.ConstraintLayout>
-```
+And don't forget about the corresponding layout file. I won't include it, but you can check it out [here](!!TODO)
 
 ![This is how our view looks like.]({{ site.url }}/assets/MainActivityLayout.png){:.center-image}
 *This is how our view looks like.*{: style="text-align: center; display: block;"}
@@ -502,6 +439,8 @@ And don't forget about the corresponding layout file:
 As you can see, our view implementation is pretty straightforward. We show and hide appropriate views, show an error in the toast, and provide click streams - in case of login clicks, we map it to the `LoginBundle` using text from inputs. There is also a defined presenter and layout, and that was done for us by MoviperTemplatesGenerator. In the view you just define the behaviour, layout, and a presenter, and you don't have to worry about any kind of binding to presenter, handling lifecycle etc. Moviper does it for you.
 
 It's worth noting that view is 100% passive here - it means that view is not aware of kind of presenter attached to it nor methods it has. It doesn't call presenter in any way - it just provides the interface to which some presenter can attach itself to. It's presenter that decides what to do, what to use and what not to use - view has no app logic inside. First of all, it's a clean design that makes our apps maintainable, but it also comes in handy in our production environment where we attach multiple presenters to our views using Moviper [ViperPresentersList](https://github.com/mkoslacz/Moviper#attaching-multiple-presenters-to-the-view) presenter class; app logic presenter, analytics presenter, advertising presenter, and the count of the presenters is transparent for the view. It allows us dynamically attach or detach presenters to ie turn off ads for premium users. Moreover, if your presenter has grown too much and for some reason you can't split your view to smaller chunks that corresponds with separate usecases you can create the presenter for each usecase and attach the whole bunch of them to the single view. It allows us to keep our classes small, and smaller (in most cases) means more readable, more maintainable, more testable and more awesome. And still - with no changes to View! It also works for defining multiple behaviors for one view. We use it ie to create a one login screen and reuse it in the various login methods as we allow authorization using some external account credentials in our apps. Moviper provides a ready-to-use tool for it called [PresentersDispatcher](https://github.com/mkoslacz/Moviper#choosing-presenter-on-runtime). The idea works in both ways - we also swap the views using the same presenter and whole app logic, ie when we implement the Android TV version of our apps using the goodies from Leanback Library.
+
+# Starters & Following Views
 
 Ok, now our login screen is fully functional. But before launching it let's pretend that our sprint have just finished and we have to implement the next screens. Let's check out how it will influence our previous module (hint: it won't).
 
@@ -558,6 +497,8 @@ class ProfileActivity : AppCompatActivity() {
 And once again, no changes in Login Viper code, and the only difference is that we're processed to the ProfileScreen after the successfull login.
 
 And well, it looks like we're finished our base example of Moviper PassiveView flavor in Kotlin. Of course, if you prefer Java you can use it as well, even better with some flavor that will replace Kotlin Android Extensions for you, ie Butterknife or Databinding flavor. Moreover, if you don't like the passive view concept you can choose the flavor in which view is not passive and it calls presenters metods, or you can even pick the non-rx Moviper version. Feel free to choose your favorite! (but take note that I consider the flavor described in this post as a most boilerplate-reducing, readable, scalable and featureful) Just check out the repo.
+
+# Sum up
 
 To sum up let's take a look at our code. It's highly modular in way that allows us remotely enable, disable and swap modules and develop multiple screens at once without conflicts. The contract allows a dev to take a quick overview how the whole module works while each submodule is so simple and beautiful that it's understandable at a glance. The view is passive, so we can swap the presenters, split the presenter to multiple ones if it grows too much, or attach additional presenters for optional features. We wrapped all of our logic in Rx streams that allows us to track the app execution path easily and thanks to it it's almost completely crash-safe (not to be confused with being error-safe). And there is a MoviperTemplatesGenerator that did all of the relations binding, class creating and inheritance defining for us! That's pretty nice bunch of features!
 
