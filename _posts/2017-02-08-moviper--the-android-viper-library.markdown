@@ -3,30 +3,45 @@ layout: post
 title: "Moviper - the Android VIPER Library"
 date: "2017-02-08 08:38:09 +0100"
 ---
+https://michelf.ca/projects/php-markdown/extra/
+[//]: # (editor comments:)
 
-#tl;dr
+[//]: # (shall I use "Presenter" or "a presenter" form?)
 
 # Introduction
 
-On the previous post I have covered pros and cons and a general idea of the viper architecture. For now let's focus on Moviper - the Android Viper library. Moviper comes in many different flavors, you can choose more or less advanced one or just pick one that fits you most. In this post I'll show you the flavor I use in the daily basis on the example of a simple Github login screen. I use Rx Presenters, Passive Autoinject Views and I wrap it up using Kotlin language with Android Kotlin Extensions. Sounds scary? Actually it's pretty straighforward. Fear not and read on!
+On the previous post I have covered pros and cons and a general idea of the Viper architecture. For now let's focus on [Moviper - the Android Viper library](https://github.com/mkoslacz/Moviper). Moviper comes in many different flavors, there are more and less advanced ones - you can just pick one that fits you most. In this post I'll show you the flavor I use in the daily basis on the example of a simple Github login screen. I use Rx submodules Passive Autoinject Views and I wrap it up using Kotlin language with Android Kotlin Extensions. Sounds scary? Actually it's pretty straightforward. Fear not and read on!
 
-We are going to create very simple app, that will allow a user to log in to Github and go to the fake profile page, and provide info about the app.
+We are going to create very simple app, that will allow a user to log in to Github and go to the profile page, and provide info about the app.
 
-INSERT SOME APP SCREENSHOTS
+It will consist of
+- login screen:
+  - allows user to go to the help screen,
+  - allows user to login and then leads to profile page.
+- fake profile page:
+  - displays logged in user username.
+- fake help page:
+  - displays "help" text.
 
-It will consist of login screen that:
-- allows user to go to the help screen,
-- lead to profile page after login.
+  [//]: # (3 images side-by-side table)
+
+  |Login screen|Fake profile screen|Fake help screen|
+  |:----:|:----:|:----:|
+  |![Login screen.]({{ site.url }}/assets/LoginActivityLayout.png){:.center-image }|![Fake profile screen.]({{ site.url }}/assets/ProfileActivityLayout.png){:.center-image}|![Fake help screen.]({{ site.url }}/assets/HelpActivityLayout.png){:.center-image }|
+
+  *This is our sample app mockup. As you can see it's not a UI tutorial ;).*{:.image-caption}
 
 Ok, enough talking, let's get our feet wet!
 
+
+
 # Setup & Contract
 
-First of all, install the [Moviper Templates Generator](https://github.com/mkoslacz/MoviperTemplateGenerator) using instructions provided in the repos readme. Just click the link I've inlined. Remember to restart the Android Studio after the installation!
+First of all, install the [Moviper Templates Generator](https://github.com/mkoslacz/MoviperTemplateGenerator) using instructions provided in the repository readme. Just click the link. Remember to restart the Android Studio after the installation!
 
 After that, start up with a brand new Android project with no Activity. If you're new to Android you can follow a official Google tutorial [here](https://developer.android.com/studio/projects/create-project.html) to learn more about stuff we will discuss here.
 
-The next step is pretty obvious, go to [Moviper Github page](https://github.com/mkoslacz/Moviper) and find the latest Moviper version and import its dependency adding following line to app module gradle dependencies and sync the project.
+The next step is pretty obvious, go to [Moviper Github page](https://github.com/mkoslacz/Moviper) and find the latest Moviper version and import its Rx-dependency adding following line to app module gradle dependencies and sync the project.
 
 ```(groovy)
 dependencies {
@@ -34,15 +49,20 @@ dependencies {
 }
 ```
 
-Now things get interesting. Let's create our first Viper Activity! Right-click the app package and select New -> Moviper -> RxActivity (see attached screen). Pro tip: you can even assign a shortcut to creating any of the Moviper modules using *Manage shortcuts* menu (easy to find using our standard cmd/ctrl + shift + A magic) and searching for "moviper" actions. That will be even more smooth using the great [Key Promoter](https://plugins.jetbrains.com/plugin/4455-key-promoter) plugin, it will suggest you assigning a shortcut to the most used actions, you should definitely check it out. Pro tip: search for "plugins" menu using cmd shift a, and just search for this plugin there!
+Now things get interesting. Let's create our first Viper Activity! Right-click the app package and select `New -> Moviper -> RxActivity`.
 
-![This is where lies RxActivity generator.]({{ site.url }}/assets/chosingViperRxActivity.jpg){:.center-image}
-*This is where lies RxActivity generator.*{: style="text-align: center; display: block;"}
+![This is where lies RxActivity generator.]({{ site.url }}/assets/chosingViperRxActivity.png){:.center-image}
+*This is where lies RxActivity generator.*{:.image-caption}
 
-![Assigning shortcuts for Moviper actions will definitely come in handy.]({{ site.url }}/assets/assigningShortcutsToMoviper.jpg){:.center-image}
-*Assigning shortcuts for Moviper actions will definitely come in handy.*{: style="text-align: center; display: block;"}
+*Pro tip: you can even assign a shortcut to creating any of the Moviper modules using `Manage shortcuts` menu (easy to find using our standard `cmd/ctrl + shift + A` magic) and searching for "moviper" actions and right clicking them to add a shortcut. That will be even more smooth using the great [Key Promoter](https://plugins.jetbrains.com/plugin/4455-key-promoter) plugin, it will suggest you assigning a shortcut to the most used actions, you should definitely check it out!*{: style="color: gray"}
 
-Fill up the form like I did on the attached image: name it LoginActivity, mark it as a Launcher Activity and select Passive Autoinject type. There are some magic options there, but just trust me for now - I'll cover them later. After confirming that choice we land in the Contract class. It generally has the one purpose - it defines whole control and data flow in the given screen. At your left hand side, on the project overview, you can see the rest of the classes generated by plugin in \*.viper.login package. Viper is general package for viper modules, and login was inferred from the name we gave to the generated Activity. But hold on - I told you that we will make a Kotlin app, and these files feel somehow suspicious. Yep, MoviperTemplateGenerator creates only Java file sets and actually there is no plan to migrate it to Kotlin, as this way we can use it in the Java code, and for Kotlin apps we can convert it to Kotlin very easy, so let's do it right now using magic alt + cmd + shift + K shortcut in each of generated classes.
+![Assigning shortcuts for Moviper actions will definitely come in handy.]({{ site.url }}/assets/assignMoviperShortcuts.png){:.center-image}
+*Assigning shortcuts for Moviper actions will definitely come in handy.*{:.image-caption}
+
+Fill up the form like I did on the screenshot below: name it LoginActivity, mark it as a Launcher Activity and select Passive Autoinject type. There are some magic options there, but just trust me for now - I'll cover them later. After confirming that choice we land in the Contract class. It generally has the one purpose - it defines whole control and data flow in the given screen. At your left hand side, on the project overview, you can see the rest of the classes generated by plugin in \*.viper.login package. Viper is general package for viper modules, and login was inferred from the name we gave to the generated Activity. But hold on - I told you that we will make a Kotlin app, and these files feel somehow suspicious. Yep, MoviperTemplateGenerator creates only Java file sets and actually there is no plan to migrate it to Kotlin, as this way we can use it in the Java code, and for Kotlin apps we can convert it to Kotlin very easy, so let's do it right now using magic alt + cmd + shift + K shortcut in each of generated classes.
+
+![That's how I have created the LoginActivity.]({{ site.url }}/assets/ViperActivityCreation.png){:.center-image}
+*That's how I have created the LoginActivity.*{:.image-caption}
 
 For now we have a set of 5 Kotlin files:
 
@@ -113,7 +133,7 @@ data class UserModel(val login: String,
 
 // TODO change it!
 ![Let's put our nice data class to the separate package.]({{ site.url }}/assets/LoginBundleLocation.png){:.center-image}
-*Let's put our nice data class to the separate package.*{: style="text-align: center; display: block;"}
+*Let's put our nice data class to the separate package.*{:.image-caption}
 
 As you can see, Presenter has no interface here. Now we get to the Passive word from the used Moviper screen flavor. Passive Viper means that View has no idea about Presenter attached to it. Actually you can access presenter from view using `presenter` property / `getPresenter()` method, but in this flavor it will be just plain ViperPresenter, so you won't have an access to your actual presenter methods. View communicates with presenter through event streams exposed through view interface to which presenter subscribes when attaching to the view. Interactor and Routing are, let's say, Preseters "tools", presenter delegates work to them and receives results using Observables. That said, there is no component that calls Presenters methods, so there is no need to make it implement any interface.
 
@@ -434,7 +454,7 @@ I've also used [Jake Wharton's RxBinding](https://github.com/JakeWharton/RxBindi
 And don't forget about the corresponding layout file. I won't include it, but you can check it out [here](!!TODO)
 
 ![This is how our view looks like.]({{ site.url }}/assets/MainActivityLayout.png){:.center-image}
-*This is how our view looks like.*{: style="text-align: center; display: block;"}
+*This is how our view looks like.*{:.image-caption}
 
 As you can see, our view implementation is pretty straightforward. We show and hide appropriate views, show an error in the toast, and provide click streams - in case of login clicks, we map it to the `LoginBundle` using text from inputs. There is also a defined presenter and layout, and that was done for us by MoviperTemplatesGenerator. In the view you just define the behaviour, layout, and a presenter, and you don't have to worry about any kind of binding to presenter, handling lifecycle etc. Moviper does it for you.
 
@@ -495,6 +515,8 @@ class ProfileActivity : AppCompatActivity() {
 ```
 
 And once again, no changes in Login Viper code, and the only difference is that we're processed to the ProfileScreen after the successfull login.
+
+TODO add some description of how the app works!
 
 And well, it looks like we're finished our base example of Moviper PassiveView flavor in Kotlin. Of course, if you prefer Java you can use it as well, even better with some flavor that will replace Kotlin Android Extensions for you, ie Butterknife or Databinding flavor. Moreover, if you don't like the passive view concept you can choose the flavor in which view is not passive and it calls presenters metods, or you can even pick the non-rx Moviper version. Feel free to choose your favorite! (but take note that I consider the flavor described in this post as a most boilerplate-reducing, readable, scalable and featureful) Just check out the repo.
 
